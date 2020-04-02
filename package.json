@@ -1,0 +1,21 @@
+{
+  "name": "site-for-student-group",
+  "version": "0.0.1",
+  "description": "Individual project",
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.15.2",
+    "express-fileupload": "^1.1.6",
+    "lodash": "^4.17.15",
+    "mongodb": "^3.3.3",
+    "morgan": "^1.10.0",
+    "mysql2": "^2.1.0",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.2",
+    "@types/mongodb": "^3.3.14"
+  }
+}
