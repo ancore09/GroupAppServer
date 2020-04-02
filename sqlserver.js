@@ -8,8 +8,8 @@ const connection = mysql.createPool({
 	connectionLimit: 100,
 	host: 'localhost',
 	user: 'root',
-	database: 'dbname',
-	password: 'dbpassword',
+	database: 'LearningGroupsDB',
+	password: 'rootpassword'
 });
 const fileUpload = require('express-fileupload');
 const cors = require('cors');
@@ -19,21 +19,19 @@ const port = 3000;
 
 
 app.use(fileUpload({ createParentPath: true }));
-
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('dev'));
-
 app.use(express.static('uploads'));
-
-
 app.all("/*", function(req, res, next){
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
     next();
 });
+
+
 
 app.post('/uploadFile', async (req, res) => {
 	try {
@@ -117,17 +115,6 @@ app.post('/upload-photos', async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 app.get('/auth', (req, res) => {
 	let login = req.query.login;
 	let passhash = req.query.passwordhash;
@@ -135,6 +122,18 @@ app.get('/auth', (req, res) => {
 	let sql = 'SELECT * FROM users WHERE login = (?) and passwordhash = (?)';
 
 	connection.query(sql, [login, passhash], (err, results) => {
+		if (err) return console.log(err);
+		console.log(results);
+		res.send(results[0]);
+	});
+});
+
+app.get('/getMemberData', (req, res) => {
+	let id = req.query.id;
+
+	let sql = 'SELECT * FROM membersdata WHERE ID = (?)';
+
+	connection.query(sql, [id], (err, results) => {
 		if (err) return console.log(err);
 		console.log(results);
 		res.send(results[0]);
@@ -153,6 +152,8 @@ app.post('/regUser', (req, res) => {
     });
 });
 
+
+
 app.get('/getGroup', (req, res) => {
 	let id = req.query.id;
 
@@ -165,17 +166,75 @@ app.get('/getGroup', (req, res) => {
 	});
 });
 
-app.get('/getMemberData', (req, res) => {
-	let id = req.query.id;
+app.get('/getGrouping', (req, res) => {
+	let userid = req.query.userid;
+	let groupid = req.query.groupid;
 
-	let sql = 'SELECT * FROM membersdata WHERE ID = (?)';
+	let sql = 'SELECT * FROM usergrouping';
+	let querydata = [];
 
-	connection.query(sql, [id], (err, results) => {
+	if (userid != null) {
+		sql = 'SELECT * FROM usergrouping WHERE user_id = (?)';
+		querydata.push(userid);
+	}
+
+	if (groupid != null) {
+		sql = 'SELECT * FROM usergrouping WHERE group_id = (?)';
+		querydata.push(groupid);
+	}
+
+	connection.query(sql, querydata, (err, results) => {
 		if (err) return console.log(err);
 		console.log(results);
-		res.send(results[0]);
+		res.send(results);
 	});
 });
+
+app.post('/addUserToGroup', (req,res) => {
+	let querydata = Object.values(req.body);
+
+	let sql1 = 'INSERT INTO usergrouping(User_ID, Group_ID) VALUES (?,?)';
+	let sql2 = 'INSERT INTO evaluating(lesson_ID) SELECT ID FROM lessons WHERE Group_ID = ?';
+	let sql3 = 'INSERT INTO learning(User_ID, Evaluation_ID) VALUES (?,?)';
+	let sql4 = 'UPDATE learning SET Evaluation_ID = (?) WHERE User_ID = (?)';
+
+	connection.query(sql1, querydata, (err, results) => {
+		if (err) {
+			console.log(err);
+			res.send(err);
+			return;
+		}
+		console.log("USERGROUPING INSERT");
+		console.log(results);
+
+		connection.query(sql2, [querydata[1]], (err, results) => {
+			if (err) {
+				console.log(err);
+				res.send(err);
+				return;
+			}
+			console.log("EVALUATING INSERT");
+			console.log(results);
+
+			let start_id = results.insertId;
+			let end_id = results.affectedRows + start_id;
+
+			for (let i = start_id; i < end_id; i++) {
+				connection.query(sql3, [querydata[0], i], (err, results) => {
+					console.log("LEARNING INSERT");
+					if (err) {
+						console.log(err);
+						res.send(err);
+						return;
+					}
+					console.log(results);
+				});
+			}
+		});
+	});
+});
+
+
 
 app.get('/getNews', (req, res) => {
 	let groupid = req.query.groupid;
@@ -221,6 +280,24 @@ app.get('/getInforming', (req, res) => {
 		res.send(results);
 	});
 });
+
+
+
+app.get('/getLearning', (req, res) => {
+	let login = req.query.login;
+	let group = req.query.group;
+
+	let querydata = [];
+	querydata.push(login);
+
+	let sql = 'SELECT * FROM learning WHERE User_ID = (SELECT ID FROM users WHERE Login = (?))';
+	connection.query(sql, querydata, (err, results) => {
+		if (err) return console.log(err);
+		console.log(results);
+		res.send(results);
+	});
+});
+
 
 app.get('/getLessons', (req, res) => {
 	let loginid = req.query.loginid;
@@ -268,16 +345,17 @@ app.post('/postLesson', (req, res) => {
 	});
 });
 
+
 app.get('/getUserMarks', (req, res) => {
 	let login = req.query.login;
 	let group = req.query.group;
 	let lesson_IDs = req.query.lessonsids;
 	console.log(lesson_IDs);
-	
+
 	let querydata = [];
 	querydata.push(login);
 	querydata.push(lesson_IDs);
-	
+
 	let sql = 'SELECT * FROM marks WHERE ID IN ' +
 		'(SELECT Mark_ID FROM evaluating WHERE ID IN ' +
 		'(SELECT Evaluation_ID FROM learning WHERE User_ID = (SELECT ID FROM users WHERE login = (?))) AND Lesson_ID IN (?))';
@@ -313,100 +391,6 @@ app.get('/getEvaluation', (req, res) => {
 		res.send(results);
 	});
 });
-
-app.get('/getLearning', (req, res) => {
-	let login = req.query.login;
-	let group = req.query.group;
-	
-	let querydata = [];
-	querydata.push(login);
-	
-	let sql = 'SELECT * FROM learning WHERE User_ID = (SELECT ID FROM users WHERE Login = (?))';
-	connection.query(sql, querydata, (err, results) => {
-		if (err) return console.log(err);
-		console.log(results);
-		res.send(results);
-	});
-});
-
-app.post('/addUserToGroup', (req,res) => {
-	let querydata = Object.values(req.body);
-	
-	let sql1 = 'INSERT INTO usergrouping(User_ID, Group_ID) VALUES (?,?)';
-	let sql2 = 'INSERT INTO evaluating(lesson_ID) SELECT ID FROM lessons WHERE Group_ID = ?';
-	let sql3 = 'INSERT INTO learning(User_ID, Evaluation_ID) VALUES (?,?)';
-	let sql4 = 'UPDATE learning SET Evaluation_ID = (?) WHERE User_ID = (?)';
-	
-	connection.query(sql1, querydata, (err, results) => {
-		if (err) {
-			console.log(err);
-			res.send(err);
-			return;
-		}
-		console.log("USERGROUPING INSERT");
-		console.log(results);
-		
-		connection.query(sql2, [querydata[1]], (err, results) => {
-			if (err) {
-				console.log(err);
-				res.send(err);
-				return;
-			}
-			console.log("EVALUATING INSERT");
-			console.log(results);
-			
-			let start_id = results.insertId;
-			let end_id = results.affectedRows + start_id;
-			
-			for (let i = start_id; i < end_id; i++) {
-				connection.query(sql3, [querydata[0], i], (err, results) => {
-					console.log("LEARNING INSERT");
-					if (err) {
-						console.log(err);
-						res.send(err);
-						return;
-					}
-					console.log(results);
-				});
-			}
-		});
-	});
-});
-
-app.get('/getGrouping', (req, res) => {
-	let userid = req.query.userid;
-	let groupid = req.query.groupid;
-	
-	let sql = 'SELECT * FROM usergrouping';
-	let querydata = [];
-	
-	if (userid != null) {
-		sql = 'SELECT * FROM usergrouping WHERE user_id = (?)';
-		querydata.push(userid);
-	}
-	
-	if (groupid != null) {
-		sql = 'SELECT * FROM usergrouping WHERE group_id = (?)';
-		querydata.push(groupid);
-	}
-	
-	connection.query(sql, querydata, (err, results) => {
-		if (err) return console.log(err);
-		console.log(results);
-		res.send(results);
-	});
-});	
-
-
-
-
-
-
-
-
-
-
-
 
 
 
