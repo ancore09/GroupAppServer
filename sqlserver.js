@@ -9,7 +9,7 @@ const connection = mysql.createPool({
 	host: 'localhost',
 	user: 'root',
 	database: 'LearningGroupsDB',
-	password: 'rootpassword'
+	password: 'R5jFNB6vak'
 });
 const fileUpload = require('express-fileupload');
 const cors = require('cors');
@@ -413,9 +413,11 @@ io.on('connection', function(socket) {
     console.log("connected");
 
     socket.on('message', function(message) {
-        io.in(room).emit('message', message);
-        console.log(JSON.parse(message));
-        Messages.push(JSON.parse(message));
+    	console.log(message);
+        io.to(message.room).emit('message', message.mes);
+        console.log(message.room);
+        console.log(JSON.parse(message.mes));
+        Messages.push(JSON.parse(message.mes));
     });
 
     socket.on('disconnect', function() {
@@ -426,9 +428,13 @@ io.on('connection', function(socket) {
     socket.on('leave', function () {
         socket.leave(room);
     });
+
+    socket.on('changeRoom', function (obj) {
+		console.log(obj);
+		socket.leave(obj.prev_id);
+		socket.join(obj.new_id);
+	});
 });
-
-
 
 http.listen(port, function(){
     console.log('listening on localhost:' + port);

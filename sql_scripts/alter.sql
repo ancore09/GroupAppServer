@@ -5,5 +5,5 @@ use LearningGroupsDB;
 #ALTER TABLE lessons change Hometask homework text not null;
 #ALTER TABLE lessons change ProfComment profcomment text;
 
-alter table news change datedmy datedmy varchar(10);
+#alter table news change filehash filehash varchar(36);
 select * from news;
