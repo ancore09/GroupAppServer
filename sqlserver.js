@@ -190,6 +190,17 @@ app.get('/getGrouping', (req, res) => {
 	});
 });
 
+app.get("/getUsers", (req, res) => {
+    let groupid = req.query.groupid;
+
+    let sql = 'SELECT * FROM users WHERE ID IN (SELECT user_id FROM usergrouping WHERE group_id = (?))'
+    connection.query(sql, [groupid], (err, results) => {
+        if (err) return console.log(err);
+        console.log(results);
+        res.send(results);
+    })
+})
+
 app.post('/addUserToGroup', (req,res) => {
 	let querydata = Object.values(req.body);
 
@@ -229,6 +240,10 @@ app.post('/addUserToGroup', (req,res) => {
 					}
 					console.log(results);
 				});
+
+				if (i + 1 == end_id) {
+					res.send(results);
+				}
 			}
 		});
 	});
@@ -254,7 +269,7 @@ app.post('/postNew', (req, res) => {
 	let groupid = req.query.groupid;
 	let querydata = Object.values(req.body);
 	
-	let sql1 = 'INSERT INTO news (datedmy, title, body, epilogue) VALUES (?,?,?,?)';
+	let sql1 = 'INSERT INTO news (datedmy, title, body, epilogue, filehash) VALUES (?,?,?,?,?)';
 	let sql2 = 'INSERT INTO informing (group_id, new_id) VALUES (?,?)';
 	connection.query(sql1, querydata, (err, results) => {
 		if (err) return console.log(err);
@@ -315,7 +330,7 @@ app.get('/getLessons', (req, res) => {
 	});
 });
 
-app.post('/postLesson', (req, res) => {
+/*app.post('/postLesson', (req, res) => {
 	let querydata = Object.values(req.body);
 
 	let sql1 = 'INSERT INTO lessons (group_id, datedmy, theme, homework, profcomment) VALUES(?,?,?,?,?)';
@@ -343,6 +358,69 @@ app.post('/postLesson', (req, res) => {
             });
         });
 	});
+});*/
+
+app.post('/postLesson', (req, res) => {
+	let querydata = Object.values(req.body);
+
+	let sql1 = 'INSERT INTO lessons (group_id, datedmy, theme, homework, profcomment, times) VALUES(?,?,?,?,?,?)';
+	let sql2 = 'SELECT COUNT(*) AS c FROM usergrouping WHERE group_id = (?)'
+	let sql3 = 'INSERT INTO evaluating (lesson_id) VALUES(?)';
+	let sql4 = 'INSERT INTO learning (user_id) SELECT user_id FROM usergrouping WHERE group_id = (?)';
+	let sql5 = 'UPDATE learning SET evaluation_id = (?) WHERE ID IN (?)'
+
+	connection.query(sql1, querydata, (err, results1) => {
+		if (err) return console.log(err);
+		console.log("LESSON INSERT")
+		console.log(results1);
+
+		connection.query(sql2, [querydata[0]], (err, results2) => {
+			if (err) return console.log(err);
+			console.log("STUDENT COUNT")
+			console.log(results2);
+
+			connection.query(sql4, [querydata[0]], (err, results4) => {
+				if (err) return console.log(err);
+				console.log("LEARNING INSERT")
+				console.log(results4);
+
+				for (let i = 0; i < results2[0].c; i++) {
+					connection.query(sql3, [results1.insertId], (err, results3) => {
+						if (err) return console.log(err);
+						console.log("EVALUATING INSERT")
+						console.log(results3);
+
+						for (let j = 0; j < results4.affectedRows; j++) {
+							connection.query(sql5, [results3.insertId, results4.insertId + j], (err, results5) => {
+								if (err) return console.log(err);
+								console.log("LEARNING UPDATE")
+								console.log(results5);
+								res.send(results5)
+							});
+						}
+					});
+				}
+			});
+		});
+	});
+});
+
+app.put('/editLesson', (req, res) => {
+	let type = req.query.type;
+
+	let sql = '';
+
+	if (type == 1) {
+		sql = 'UPDATE lessons SET theme = (?) WHERE id = (?)'
+	} else if (type == 2) {
+		sql = 'UPDATE lessons SET homework = (?) WHERE id = (?)'
+	}
+
+	connection.query(sql, Object.values(req.body), (err, results) => {
+		if (err) return console.log(err);
+		console.log(results);
+		res.send(results)
+	});
 });
 
 
@@ -364,6 +442,31 @@ app.get('/getUserMarks', (req, res) => {
 		console.log(results);
 		res.send(results);
 	});
+});
+
+app.get('/getMarks', (req, res) => {
+   let login = req.query.login;
+   let groupid = req.query.groupid;
+
+   let sql = 'SELECT * FROM marks WHERE ID IN' +
+       '(SELECT mark_id FROM evaluating WHERE ID IN' +
+       '(SELECT evaluation_id FROM learning WHERE user_id = ' +
+       '(SELECT ID FROM users WHERE login = (?))) ' +
+       'AND lesson_id IN ' +
+       '(SELECT ID FROM lessons WHERE group_id = (?))) ORDER BY ID DESC';
+
+    /*let sql = 'SELECT * FROM marks AS m JOIN lessons AS l ON m.id = l.id WHERE m.ID IN' +
+        '(SELECT mark_id FROM evaluating WHERE ID IN' +
+        '(SELECT evaluation_id FROM learning WHERE user_id = ' +
+        '(SELECT ID FROM users WHERE login = (?))) ' +
+        'AND lesson_id IN ' +
+        '(SELECT ID FROM lessons WHERE group_id = (?))) ORDER BY l.datedmy DESC';*/
+
+   connection.query(sql, [login, groupid], (err, results) => {
+       if (err) return console.log(err);
+       console.log(results);
+       res.send(results);
+   });
 });
 
 app.post('/putUserMark', (req, res) => {
@@ -397,6 +500,7 @@ app.get('/getEvaluation', (req, res) => {
 let Messages = [];
 
 app.get('/getMessages', (req, res) => {
+    
     console.log(Messages);
     res.send(JSON.stringify(Messages));
 });
@@ -416,8 +520,8 @@ io.on('connection', function(socket) {
     	console.log(message);
         io.to(message.room).emit('message', message.mes);
         console.log(message.room);
-        console.log(JSON.parse(message.mes));
-        Messages.push(JSON.parse(message.mes));
+        console.log(message.mes);
+        Messages.push(message.mes);
     });
 
     socket.on('disconnect', function() {
