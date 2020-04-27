@@ -114,6 +114,10 @@ app.post('/upload-photos', async (req, res) => {
 });
 
 
+app.get("/", (req, res) => {
+	res.send("Hello, world!");
+});
+
 
 app.get('/auth', (req, res) => {
 	let login = req.query.login;
