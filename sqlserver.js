@@ -544,6 +544,20 @@ io.on('connection', function(socket) {
 	});
 });
 
+
+// delete this later
+
+app.get('/getPoints', (req, res) => {
+	let sql = 'SELECT * FROM points';
+	connection.query(sql,(err, results) => {
+		if (err) return console.log(err);
+		console.log(results);
+		res.send(results);
+	});
+});
+
+// delete this later
+
 http.listen(port, function(){
     console.log('listening on localhost:' + port);
 });
