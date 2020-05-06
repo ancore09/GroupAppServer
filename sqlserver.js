@@ -525,7 +525,7 @@ io.on('connection', function(socket) {
         io.to(message.room).emit('message', message.mes);
         console.log(message.room);
         console.log(message.mes);
-        Messages.push(message.mes);
+        Messages.push(JSON.parse(message.mes));
     });
 
     socket.on('disconnect', function() {
