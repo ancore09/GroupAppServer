@@ -8,7 +8,7 @@ const connection = mysql.createPool({
 	connectionLimit: 100,
 	host: 'localhost',
 	user: 'root',
-	database: 'LearningGroupsDB',
+	database: 'learninggroupsdb',
 	password: 'R5jFNB6_vak'
 });
 const fileUpload = require('express-fileupload');
