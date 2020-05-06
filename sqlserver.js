@@ -9,7 +9,7 @@ const connection = mysql.createPool({
 	host: 'localhost',
 	user: 'root',
 	database: 'LearningGroupsDB',
-	password: 'R5jFNB6vak'
+	password: 'R5jFNB6_vak'
 });
 const fileUpload = require('express-fileupload');
 const cors = require('cors');
@@ -506,7 +506,7 @@ let Messages = [];
 app.get('/getMessages', (req, res) => {
     
     console.log(Messages);
-    res.send(JSON.stringify(Messages));
+    res.send(Messages);
 });
 
 io.use((socket, next) => {
