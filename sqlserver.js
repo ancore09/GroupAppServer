@@ -506,7 +506,7 @@ let Messages = [];
 app.get('/getMessages', (req, res) => {
     
     console.log(Messages);
-    res.send(Messages);
+    res.send(JSON.stringify(Messages));
 });
 
 io.use((socket, next) => {
