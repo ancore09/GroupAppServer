@@ -558,6 +558,7 @@ io.on('connection', function(socket) {
 		console.log(obj);
 		socket.leave(obj.prev_id);
 		socket.join(obj.new_id);
+		socket.set('nick', obj.nick)
 	});
 });
 
