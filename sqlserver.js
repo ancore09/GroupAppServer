@@ -501,12 +501,19 @@ app.get('/getEvaluation', (req, res) => {
 
 
 
-let Messages = [];
+let Messages1 = [];
+let Messages2 = [];
 
 app.get('/getMessages', (req, res) => {
-    
-    console.log(Messages);
-    res.send(JSON.stringify(Messages));
+    let groupid = req.query.groupid
+
+	if (groupid == 1) {
+		res.send(JSON.stringify(Messages1));
+	} else if (groupid == 2) {
+		res.send(JSON.stringify(Messages2));
+	}
+    //console.log(Messages);
+    //res.send(JSON.stringify(Messages1));
 });
 
 io.use((socket, next) => {
@@ -525,7 +532,11 @@ io.on('connection', function(socket) {
         io.to(message.room).emit('message', message.mes);
         console.log(message.room);
         console.log(message.mes);
-        Messages.push(JSON.parse(message.mes));
+        if (message.room == 'SamsungITSchool') {
+			Messages1.push(JSON.parse(message.mes));
+		} else if (message.room == 'BiologyClub') {
+			Messages2.push(JSON.parse(message.mes));
+		}
     });
 
     socket.on('disconnect', function() {
