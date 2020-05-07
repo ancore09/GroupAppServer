@@ -539,10 +539,10 @@ io.on('connection', function(socket) {
 		}
     });
 
-    socket.on('clients', function() {
-		console.log(room)
-		console.log(io.sockets.clients(room))
-		socket.emit('clients', io.sockets.clients(room))
+    socket.on('clients', function(data) {
+		console.log(data.room)
+		console.log(io.sockets.clients(data.room))
+		socket.emit('clients', io.sockets.clients(data.room))
 	})
 
     socket.on('disconnect', function() {
