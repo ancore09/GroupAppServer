@@ -505,11 +505,11 @@ let Messages1 = [];
 let Messages2 = [];
 
 app.get('/getMessages', (req, res) => {
-    let groupid = req.query.groupid
+    let room = req.query.room
 
-	if (groupid == 1) {
+	if (room == 'SamsungITSchool') {
 		res.send(JSON.stringify(Messages1));
-	} else if (groupid == 2) {
+	} else if (room == 'BiologyClub') {
 		res.send(JSON.stringify(Messages2));
 	}
     //console.log(Messages);
