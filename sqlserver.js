@@ -541,7 +541,7 @@ io.on('connection', function(socket) {
 
     socket.on('clients', function (room) {
 		console.log(room)
-		socket.emit(io.sockets.clients(room))
+		socket.emit('clients', io.sockets.clients(room))
 	})
 
     socket.on('disconnect', function() {
