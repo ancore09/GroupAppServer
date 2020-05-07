@@ -539,8 +539,9 @@ io.on('connection', function(socket) {
 		}
     });
 
-    socket.on('clients', function (room) {
+    socket.on('clients', function() {
 		console.log(room)
+		console.log(io.sockets.clients(room))
 		socket.emit('clients', io.sockets.clients(room))
 	})
 
